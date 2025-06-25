@@ -1,0 +1,10 @@
+[
+  {
+    "motifs": ["gratte", "démange"],
+    "reponse": "Est-ce que votre chien a des rougeurs, des croûtes ou perd ses poils ? 🐶"
+  },
+  {
+    "motifs": ["vomit", "vomissement"],
+    "reponse": "Depuis quand votre animal vomit-il ? A-t-il changé d’alimentation récemment ? 🍽️"
+  }
+]
