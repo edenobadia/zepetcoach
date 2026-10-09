@@ -1,0 +1,62 @@
+/* Correctifs zepetcoach.com
+   À coller dans : Apparence > Personnaliser > CSS additionnel
+   (ou Elementor > Réglages du site > CSS personnalisé).
+   Pré-requis : ajouter les classes CSS indiquées dans INSTRUCTIONS.md
+   (Elementor > section > Avancé > Classes CSS). */
+
+:root { --zpc-header-h: 140px; }
+@media (max-width: 1199px) { :root { --zpc-header-h: 110px; } }
+@media (max-width: 767px)  { :root { --zpc-header-h: 90px; } }
+
+/* 1. Le titre de la bannière ne passe plus sous le menu */
+.zpc-hero {
+  padding-top: calc(var(--zpc-header-h) + 24px) !important;
+}
+
+/* 2. La bannière s'agrandit au lieu de couper les boutons */
+.zpc-hero,
+.zpc-hero > .elementor-container,
+.zpc-hero > .e-con-inner {
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+.zpc-hero { padding-bottom: 48px !important; }
+
+/* 3. Le menu collant a un fond : il ne recouvre plus le pied de page */
+.zpc-header.elementor-sticky--effects,
+.zpc-header.elementor-sticky--active {
+  background: #fff !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .08);
+}
+
+/* 4. Menu ordinateur → menu mobile sous 1200 px (iPad) */
+@media (max-width: 1199px) {
+  .zpc-header .elementor-nav-menu--main { display: none !important; }
+  .zpc-header .elementor-menu-toggle   { display: flex !important; }
+  .zpc-header .zpc-desktop-only        { display: none !important; }
+}
+
+/* 5. Boutons flottants (chat / RDV) entièrement visibles */
+.zpc-floating {
+  right: 16px !important;
+  max-width: calc(100vw - 32px);
+}
+.zpc-floating a,
+.zpc-floating .elementor-button { border-radius: 999px !important; }
+
+/* 6. Pas de page plus large que l'écran */
+html, body { overflow-x: hidden; }
+
+/* 7. Sous-menus mobiles ouverts par le script de secours */
+.elementor-nav-menu--dropdown .menu-item-has-children.zpc-open > .sub-menu {
+  display: block !important;
+}
+
+/* 8. iPhone : pas de bouton qui reste « enfoncé » après un toucher */
+@media (hover: none) {
+  .elementor-button:hover { filter: none; }
+}
+
+/* 9. Boutons du menu mobile alignés pareil */
+.zpc-mobile-cta .elementor-button-content-wrapper { justify-content: center; text-align: center; }

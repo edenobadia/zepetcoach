@@ -1,4 +1,6 @@
 import json
+import os
+import sys
 import time
 import pandas as pd
 from datetime import datetime
@@ -9,8 +11,15 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 # Configuration API
+# Clé et assistant lus depuis l'environnement (ne jamais commiter la clé)
+api_key = os.environ.get("OPENAI_API_KEY")
+assistant_id = os.environ.get("OPENAI_ASSISTANT_ID")
+if not api_key or not assistant_id:
+    sys.exit("Définissez OPENAI_API_KEY et OPENAI_ASSISTANT_ID dans l'environnement.")
+client = OpenAI(api_key=api_key)
 
-
+# Durée max d'attente d'une réponse (secondes)
+RUN_TIMEOUT = 60
 
 # Historique des interactions
 log_file = "conversation_log.json"
@@ -82,10 +91,16 @@ while True:
     run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=assistant_id)
 
     # Attente du traitement ou d'une action à exécuter
+    deadline = time.time() + RUN_TIMEOUT
     while True:
         run_status = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
 
         if run_status.status == "completed":
+            break
+
+        if run_status.status in ("failed", "cancelled", "expired", "incomplete") or time.time() > deadline:
+            if run_status.status in ("queued", "in_progress", "requires_action"):
+                client.beta.threads.runs.cancel(thread_id=thread.id, run_id=run.id)
             break
 
         elif run_status.status == "requires_action":
@@ -106,6 +121,10 @@ while True:
             )
 
         time.sleep(1)
+
+    if run_status.status != "completed":
+        print("Assistant : Désolé, je n'ai pas pu répondre. Pouvez-vous reformuler ? 🐾")
+        continue
 
     # Récupère uniquement le dernier message assistant
     messages = client.beta.threads.messages.list(thread_id=thread.id, order="desc", limit=1)
