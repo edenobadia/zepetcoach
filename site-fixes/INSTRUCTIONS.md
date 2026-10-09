@@ -1,67 +1,45 @@
-# Correctifs zepetcoach.com
+# Correctifs zepetcoach.com : état final
 
-Audit fait sur le site en ligne avec un vrai navigateur (iPhone 13 et iPad Pro 11), le 9 octobre 2026.
+Audit fait le 9 octobre 2026 sur le site en ligne avec un vrai navigateur (iPhone SE, iPhone 13, iPad Pro 11, ordinateur 1440 px).
 
-## Cause n°1 : WP Rocket « Remove Unused CSS » (corrige 3 bugs)
+**Tout est corrigé dans le code du thème** (dépôt `ZePetCoach/zepetcoach`), puis déployé en production via staging. Rien n'est à faire dans l'admin WordPress.
 
-WP Rocket retire tout le CSS dont les classes n'apparaissent pas dans le HTML au chargement.
-Or le thème ajoute beaucoup de classes **en JavaScript** : le chat, l'ouverture des menus et le fond du header.
-Leur CSS est donc supprimé.
+## Cause n°1 : WP Rocket « Remove Unused CSS »
 
-| Bug | Preuve (avec WP Rocket → sans WP Rocket) |
-|---|---|
-| Chat Chloé affiché en vrac en bas de page | `#zpc-chat-widget` : `position: static` → `fixed` |
-| Sous-menus mobiles qui ne s'ouvrent pas | classe `.open` bien ajoutée, mais sous-menu `display: none` → `flex` |
-| Header transparent qui recouvre le contenu et le pied de page au défilement | header `.blue` : fond `transparent` → `rgb(10, 99, 160)` |
+WP Rocket retire le CSS dont les classes n'apparaissent pas dans le HTML au chargement.
+Or le thème ajoute des classes en JavaScript, et leur CSS était donc supprimé.
 
-### À faire (2 minutes)
-
-Allez dans **WP Rocket > Optimisation des fichiers > CSS > Supprimer le CSS inutilisé > Liste sûre CSS** (*CSS safelist*) et collez :
-
-```
-.open
-.blue
-.white
-.lock
-.show
-.hide
-.active
-.is-(.*)
-.zpc-(.*)
-#zpc-(.*)
-.iti(.*)
-```
-
-Enregistrez, puis allez dans **WP Rocket > Vider et précharger le cache** (la liste du CSS utilisé se régénère).
-
-Si ça ne suffit pas, vous pouvez à la place mettre la ligne suivante dans la même liste. Elle garde tout le CSS du thème, ce qui est un peu moins optimisé mais sans risque :
-
-```
-/app/themes/zepetcoach/public/build/assets/(.*).css
-```
-
-## Cause n°2 : bugs du thème (CSS à coller)
-
-Allez dans **Apparence > Personnaliser > CSS additionnel** et collez le contenu de `zepetcoach-fixes.css`.
-
-| Bug | Cause dans le thème | Vérifié |
+| Bug | Avant | Après |
 |---|---|---|
-| Boutons coupés en bas des bannières Téléconseil (iPad, portables) | `.header-teleconseil { max-height: 90vh; overflow: hidden }` : le contenu fait 878 px, la bannière 751 px | bannière 751 → 878 px, tout visible |
-| « Se connecter/S'inscrire » dépasse de l'écran sur iPad | le menu ordinateur s'affiche dès 1025 px, mais il lui faut environ 1300 px | bouton réduit à l'icône entre 1025 et 1366 px |
-| Mobile : la flèche de « Services » ne fait rien | le JS est déclenché 2 fois (sur la flèche **et** sur le lien `#`), donc ça ouvre et referme aussitôt | ouvre bien ; la flèche de Blog marche toujours |
+| Chat Chloé affiché en vrac en bas de page | `#zpc-chat-widget` en `position: static` | caché, puis fenêtre `fixed` au clic sur le bouton vert |
+| Sous-menus Services / Blog ne s'ouvrent pas sur mobile | `.open` ajouté, mais sous-menu `display: none` | sous-menu `display: flex` |
+| Header transparent qui recouvre le contenu au défilement | `.blue` : fond transparent | fond `rgb(10, 99, 160)` |
 
-## Contenu à corriger (éditeur de page)
+**Correctif (thème, `app/filters.php`) :** le filtre `rocket_rucss_safelist` contient `/app/themes/zepetcoach/public/build/assets/(.*).css`.
 
-- **Téléconseil Assistance petcoach** : « (En dehors de ces horaires voir téléconseil vétérinaire) » s'affiche sans aucun horaire au-dessus. Ajoutez les horaires ou supprimez la phrase.
+Dans WP Rocket 3.19, chaque entrée de la liste sûre est une regex comparée au sélecteur complet. Une entrée courte comme `.open` ne correspondait donc à rien. Une entrée contenant `.css` est traitée comme un motif de fichier : la feuille du thème est gardée en entier.
+
+Le pipeline de déploiement vide aussi la table `wpr_rucss_used_css`, puis le cache de pages.
+
+## Cause n°2 : bugs du thème
+
+| Bug | Cause | Correctif |
+|---|---|---|
+| Boutons coupés en bas des bannières Téléconseil (iPad) | `.header-teleconseil { max-height: 90vh; overflow: hidden }` | `max-height` supprimé (751 → 878 px) |
+| « Se connecter/S'inscrire » dépasse de l'écran sur iPad | menu desktop affiché dès 1025 px | bouton réduit à l'icône entre 1025 et 1366 px |
+| Mobile : la flèche « Services » ne fait rien | double déclenchement (flèche + lien `#`) | `e.stopPropagation()` sur la flèche |
+| Bouton « Envoyer » du chat coupé sur mobile | l'input en `flex: 1` garde `min-width: auto` | `min-width: 0` sur l'input, `flex-shrink: 0` sur le bouton |
+| Cartes de l'accueil : texte écrasé à gauche (iPad) | `grid-template-columns: 1fr auto` | 2 colonnes égales au-delà de 768 px (97/442 → 269/270 px) |
+
+## Reste à faire
+
+- **Contenu** (éditeur de page) : sur « Téléconseil Assistance petcoach », la phrase « (En dehors de ces horaires voir téléconseil vétérinaire) » s'affiche sans horaire au-dessus.
+- **À revérifier** après la prochaine régénération du « Used CSS » de WP Rocket : sous-menus mobiles, chat et header au défilement.
 
 ## Pas un bug
 
-- Les boutons flottants vert et bleu à droite sont **volontairement** à moitié cachés : ils sortent au survol ou au premier tap (`.floating-buttons .button:hover`).
+- Les boutons flottants vert et bleu à droite sont volontairement à moitié cachés : ils sortent au survol ou au premier tap.
 
-## Correctif durable (dans le code du thème)
+## Fichier `zepetcoach-fixes.css`
 
-Le vrai code du thème est dans le dépôt `ZePetCoach/zepetcoach`. Il faudrait y corriger :
-1. La règle `max-height: 90vh` de `.header-teleconseil`.
-2. Le point de rupture du menu (1024 → environ 1300 px, dans le CSS **et** dans le JS `window.innerWidth<=1024`).
-3. Le double déclenchement de `.menu-item-has-children > a, .chevron` : ajouter `e.stopPropagation()` sur la flèche.
-4. Le filtre `rocket_rucss_safelist`, pour que la liste sûre ne dépende plus des réglages de l'admin.
+Ce CSS servait de solution de secours à coller dans l'admin. Il est **inutile** maintenant que les correctifs sont dans le thème : ne pas le coller.
